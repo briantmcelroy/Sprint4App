@@ -32,6 +32,11 @@ df['is_4wd'] = df['is_4wd'].astype('str')
 df['is_4wd'] = df['is_4wd'].where(df['is_4wd'] != 'nan', 'No')
 df['is_4wd'] = df['is_4wd'].where(df['is_4wd'] != '1.0', 'Yes')
 
+# Replacing 'model_year', 'cylinders', and 'odometer' with representative values (medians)
+df['model_year'] = df['model_year'].fillna(df['model_year'].median())
+df['cylinders'] = df['cylinders'].fillna(df['cylinders'].median())
+df['odometer'] = df['odometer'].fillna(df['odometer'].median())
+
 # We'll calculate the approximate vehicle age by subtracting the year it was posted from the model year of the car.
 df['vehicle_age'] = df['date_posted'].dt.year - df['model_year']
 
