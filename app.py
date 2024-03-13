@@ -33,9 +33,28 @@ df['is_4wd'] = df['is_4wd'].where(df['is_4wd'] != 'nan', 'No')
 df['is_4wd'] = df['is_4wd'].where(df['is_4wd'] != '1.0', 'Yes')
 
 # Replacing 'model_year', 'cylinders', and 'odometer' with representative values (medians)
-df['model_year'] = df['model_year'].fillna(df['model_year'].median())
-df['cylinders'] = df['cylinders'].fillna(df['cylinders'].median())
-df['odometer'] = df['odometer'].fillna(df['odometer'].median())
+# For each column: 
+#   (1) Group by model (in case of odometer, also by year), calculate median. 
+#   (2) Iterating over unique models (and years, for odometer), replace all NaNs with median value.
+#   (3) Cast type to int64 instead of float.
+
+# Fill 'model_year' column
+model_year_medians = df.groupby('model')['model_year'].median()
+for model in model_year_medians.index:
+    df['model_year'] = df['model_year'].where((df['model'] != model) | (~df['model_year'].isna()), model_year_medians[model])
+df['model_year'] = df['model_year'].astype('int64')
+
+# Fill 'cylinders' column
+cylinders_medians = df.groupby('model')['cylinders'].median()
+for model in cylinders_medians.index:
+    df['cylinders'] = df['cylinders'].where((df['model'] != model) | (~df['cylinders'].isna()), cylinders_medians[model])
+df['cylinders'] = df['cylinders'].astype('int64')
+
+# Fill 'odometer' column
+odometer_medians = df.groupby(['model', 'model_year'])['cylinders'].median()
+for (model, year) in odometer_medians.index:
+    df['odometer'] = df['odometer'].where((df['model'] != model) | (df['model_year'] != year) | (~df['odometer'].isna()), odometer_medians[model, year])
+df['odometer'] = df['odometer'].astype('int64')
 
 # We'll calculate the approximate vehicle age by subtracting the year it was posted from the model year of the car.
 df['vehicle_age'] = df['date_posted'].dt.year - df['model_year']
